@@ -4,15 +4,14 @@ import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDSNInQpcoBPWsI2hqZzSUtuQr8EnbhSAk",
-  authDomain: "myexpensetracker-5215d.firebaseapp.com",
-  projectId: "myexpensetracker-5215d",
-  storageBucket: "myexpensetracker-5215d.firebasestorage.app",
-  messagingSenderId: "35352813602",
-  appId: "1:35352813602:web:dea96972ccf3eff3ffea7b",
-  measurementId: "G-YFZ4Y2RPPB",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
-
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 // ตั้งค่า Google Auth Provider
