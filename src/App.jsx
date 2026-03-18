@@ -3,15 +3,26 @@ import SummaryCards from "./components/SummaryCards";
 import TransactionForm from "./components/TransactionForm";
 import TransactionList from "./components/TransactionList";
 import ExpenseChart from "./components/ExpenseChart";
+import { useAuth } from "./context/AuthContext";
+
+// --- 1. Import Firebase Tools ที่ต้องใช้ ---
+import { db } from "./firebase";
+import {
+  collection,
+  addDoc,
+  onSnapshot,
+  query,
+  where,
+  deleteDoc,
+  doc,
+  serverTimestamp,
+} from "firebase/firestore";
 
 function App() {
-  // --- 1. State สำหรับรายการ (Transactions) ---
-  const [transactions, setTransactions] = useState(() => {
-    const saved = localStorage.getItem("MY_WALLET_DATA");
-    return saved ? JSON.parse(saved) : [];
-  });
+  const { user, loginWithGoogle, logout } = useAuth();
+  const [transactions, setTransactions] = useState([]);
 
-  // --- 2. State สำหรับหมวดหมู่ (Categories) พร้อม Emoji ---
+  // หมวดหมู่ยังคงไว้ที่ LocalStorage หรือจะย้ายไป DB ในอนาคตก็ได้ครับ
   const [categories, setCategories] = useState(() => {
     const saved = localStorage.getItem("MY_CATEGORIES");
     return saved
@@ -37,41 +48,63 @@ function App() {
         };
   });
 
-  // --- 3. State สำหรับการกรองรายเดือน ---
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
-  // บันทึกข้อมูลลง LocalStorage อัตโนมัติ
+  // --- 2. ดึงข้อมูลจาก Firestore แบบ Real-time ---
   useEffect(() => {
-    localStorage.setItem("MY_WALLET_DATA", JSON.stringify(transactions));
-  }, [transactions]);
+    if (!user) return;
+
+    // กรองเฉพาะข้อมูลของ user ที่ login อยู่
+    const q = query(
+      collection(db, "transactions"),
+      where("userId", "==", user.uid),
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map((doc) => ({
+        ...doc.data(),
+        id: doc.id,
+      }));
+      setTransactions(data);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
 
   useEffect(() => {
     localStorage.setItem("MY_CATEGORIES", JSON.stringify(categories));
   }, [categories]);
 
-  // --- 4. ฟังก์ชันจัดการข้อมูล ---
-  const addTransaction = (item) => setTransactions([item, ...transactions]);
+  // --- 3. ฟังก์ชันจัดการข้อมูลบน Firestore ---
+  const addTransaction = async (item) => {
+    try {
+      await addDoc(collection(db, "transactions"), {
+        ...item,
+        userId: user.uid, // ผูกข้อมูลกับ UID ของผู้ใช้
+        createdAt: serverTimestamp(),
+      });
+    } catch (error) {
+      console.error("Error adding document: ", error);
+    }
+  };
 
-  const deleteTransaction = (id) =>
-    setTransactions(transactions.filter((t) => t.id !== id));
+  const deleteTransaction = async (id) => {
+    try {
+      await deleteDoc(doc(db, "transactions", id));
+    } catch (error) {
+      console.error("Error deleting document: ", error);
+    }
+  };
 
   const addCategory = (type, name) => {
-    // สุ่ม Emoji สนุกๆ สำหรับหมวดหมู่ที่เพิ่มใหม่
     const randomEmojis = ["✨", "🌟", "🔥", "🌈", "🎈", "💎", "🎯", "🍀"];
     const randomEmoji =
       randomEmojis[Math.floor(Math.random() * randomEmojis.length)];
-
-    const newCat = {
-      id: Date.now().toString(),
-      name,
-      emoji: randomEmoji,
-    };
-
+    const newCat = { id: Date.now().toString(), name, emoji: randomEmoji };
     setCategories((prev) => ({ ...prev, [type]: [...prev[type], newCat] }));
   };
 
-  // --- 5. Logic การกรองข้อมูลตามเดือนที่เลือก ---
   const filteredTransactions = useMemo(() => {
     return transactions.filter((t) => {
       const tDate = new Date(t.date);
@@ -82,7 +115,6 @@ function App() {
     });
   }, [transactions, selectedMonth, selectedYear]);
 
-  // คำนวณยอดเงินจากข้อมูลที่กรองแล้ว
   const totalIncome = filteredTransactions
     .filter((t) => t.type === "income")
     .reduce((a, b) => a + b.amount, 0);
@@ -93,20 +125,55 @@ function App() {
 
   const totalBalance = totalIncome - totalExpense;
 
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center p-6 text-center">
+        <div className="max-w-sm w-full bg-white p-10 rounded-[3rem] shadow-xl border border-slate-100">
+          <div className="text-6xl mb-6">💰</div>
+          <h1 className="text-3xl font-black text-slate-800 mb-2">My Wallet</h1>
+          <p className="text-slate-400 mb-8 font-medium">
+            จดบันทึกรายรับ-รายจ่ายของคุณให้เป็นระเบียบและปลอดภัย
+          </p>
+          <button
+            onClick={loginWithGoogle}
+            className="w-full flex items-center justify-center gap-3 bg-slate-900 text-white py-4 rounded-2xl font-bold hover:bg-black transition-all shadow-lg active:scale-95"
+          >
+            <img
+              src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/layout/google.png"
+              width="20"
+              alt="google"
+            />
+            เข้าสู่ระบบด้วย Google
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#F8FAFC] p-4 md:p-8 font-sans">
       <div className="max-w-6xl mx-auto">
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
-          <div>
-            <h1 className="text-3xl font-black text-slate-800 tracking-tight">
-              My Wallet Tracker
-            </h1>
-            <p className="text-slate-400 text-sm font-medium">
-              จัดการเรื่องเงินให้เป็นเรื่องง่าย ✨
-            </p>
+          <div className="flex items-center gap-4">
+            <img
+              src={user.photoURL}
+              alt="Profile"
+              referrerPolicy="no-referrer"
+              className="w-14 h-14 rounded-2xl border-4 border-white shadow-sm"
+            />
+            <div>
+              <h1 className="text-xl font-black text-slate-800 tracking-tight">
+                สวัสดี, {user.displayName} 👋
+              </h1>
+              <button
+                onClick={logout}
+                className="text-[10px] font-bold text-red-400 uppercase tracking-widest hover:text-red-600 transition"
+              >
+                Sign Out
+              </button>
+            </div>
           </div>
 
-          {/* ส่วนเลือกเดือน/ปี ดีไซน์มินิมอล */}
           <div className="flex gap-2 bg-white p-1.5 rounded-2xl shadow-sm border border-slate-100">
             <select
               className="bg-transparent outline-none text-slate-600 font-bold px-3 py-1 cursor-pointer text-sm"
@@ -147,7 +214,6 @@ function App() {
           </div>
         </header>
 
-        {/* ส่วนแสดงการ์ดสรุปยอดเงิน */}
         <SummaryCards
           totalBalance={totalBalance}
           totalIncome={totalIncome}
@@ -155,7 +221,6 @@ function App() {
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mt-10">
-          {/* ฝั่งซ้าย (4/12): ฟอร์ม และ กราฟ */}
           <div className="lg:col-span-4 space-y-8">
             <TransactionForm
               onAdd={addTransaction}
@@ -168,12 +233,11 @@ function App() {
             />
           </div>
 
-          {/* ฝั่งขวา (8/12): รายการประวัติ */}
           <div className="lg:col-span-8">
             <TransactionList
               transactions={filteredTransactions}
               onDelete={deleteTransaction}
-              categories={categories} // ส่ง categories ไปเพื่อให้แสดง Emoji ใน List ได้
+              categories={categories}
             />
           </div>
         </div>
