@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Plus, X, Calendar, ChevronDown } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Plus, X, Calendar, ChevronDown, Check } from "lucide-react";
 
 const TransactionForm = ({ onAdd, categories, onAddCategory }) => {
   const [formData, setFormData] = useState({
@@ -12,9 +12,13 @@ const TransactionForm = ({ onAdd, categories, onAddCategory }) => {
 
   const [isAddingCat, setIsAddingCat] = useState(false);
   const [newCatName, setNewCatName] = useState("");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
 
   const currentCategories =
     formData.type === "income" ? categories.income : categories.expense;
+
+  const selectedCategory = currentCategories.find(c => c.name === formData.categoryId);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -39,119 +43,143 @@ const TransactionForm = ({ onAdd, categories, onAddCategory }) => {
     }
   };
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-white p-7 rounded-[2rem] shadow-sm space-y-5 border border-gray-100"
+      className="clay-card bg-white space-y-6"
     >
-      <div className="flex justify-between items-center mb-2">
-        <h3 className="text-xl font-bold text-gray-800">บันทึกรายการ</h3>
+      <div className="flex justify-between items-center">
+        <h3 className="text-xl font-black text-slate-800">บันทึกรายการ</h3>
 
-        {/* มินิมอล ปฏิทิน */}
-        <div className="relative group">
-          <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-full border border-gray-100 group-focus-within:border-blue-400 transition-all">
-            <Calendar size={14} className="text-blue-500" />
-            <input
-              type="date"
-              className="text-xs font-semibold bg-transparent outline-none text-gray-600 cursor-pointer"
-              value={formData.date}
-              onChange={(e) =>
-                setFormData({ ...formData, date: e.target.value })
-              }
-            />
-          </div>
+        {/* Date Picker */}
+        <div className="clay-card-inset !p-2 px-3 flex items-center gap-2">
+          <Calendar size={14} className="text-[#6C63FF]" />
+          <input
+            type="date"
+            className="bg-transparent outline-none text-xs font-bold text-slate-600 cursor-pointer"
+            value={formData.date}
+            onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+          />
         </div>
       </div>
 
-      {/* Selector ประเภท */}
-      <div className="flex gap-2 p-1.5 bg-gray-50 rounded-2xl border border-gray-100">
+      {/* Type Selector */}
+      <div className="clay-card-inset !p-1 flex gap-1">
         <button
           type="button"
-          onClick={() =>
-            setFormData({ ...formData, type: "income", categoryId: "" })
-          }
-          className={`flex-1 py-2.5 rounded-xl text-sm transition-all duration-300 ${
-            formData.type === "income"
-              ? "bg-white shadow-md text-green-600 font-bold"
-              : "text-gray-400 hover:text-gray-600"
-          }`}
+          onClick={() => setFormData({ ...formData, type: "income", categoryId: "" })}
+          className={`flex-1 py-3 rounded-2xl text-sm font-black transition-all duration-300 ${formData.type === "income"
+            ? "bg-[#2c8160] text-white shadow-lg shadow-[#2c8160]/20"
+            : "text-slate-400 hover:bg-slate-100"
+            }`}
         >
           รายรับ
         </button>
         <button
           type="button"
-          onClick={() =>
-            setFormData({ ...formData, type: "expense", categoryId: "" })
-          }
-          className={`flex-1 py-2.5 rounded-xl text-sm transition-all duration-300 ${
-            formData.type === "expense"
-              ? "bg-white shadow-md text-red-600 font-bold"
-              : "text-gray-400 hover:text-gray-600"
-          }`}
+          onClick={() => setFormData({ ...formData, type: "expense", categoryId: "" })}
+          className={`flex-1 py-3 rounded-2xl text-sm font-black transition-all duration-300 ${formData.type === "expense"
+            ? "bg-[#FF6B6B] text-white shadow-lg shadow-[#FF6B6B]/20"
+            : "text-slate-400 hover:bg-slate-100"
+            }`}
         >
           รายจ่าย
         </button>
       </div>
 
-      <div className="space-y-3">
-        <input
-          type="text"
-          placeholder="ทำอะไรมา? (เช่น ซื้อกาแฟ)"
-          className="w-full p-4 bg-gray-50 border border-transparent rounded-2xl outline-none focus:bg-white focus:border-blue-200 transition-all text-gray-700"
-          value={formData.title}
-          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-        />
-
-        <div className="flex gap-3">
+      <div className="space-y-4">
+        <div className="clay-card-inset !p-0 overflow-hidden">
           <input
-            type="number"
-            placeholder="0.00"
-            className="w-1/2 p-4 bg-gray-50 border border-transparent rounded-2xl outline-none focus:bg-white focus:border-blue-200 transition-all font-bold text-gray-800"
-            value={formData.amount}
-            onChange={(e) =>
-              setFormData({ ...formData, amount: e.target.value })
-            }
+            type="text"
+            placeholder="ทำอะไรมา?"
+            className="w-full p-4 bg-transparent outline-none text-slate-700 font-bold placeholder:text-slate-300"
+            value={formData.title}
+            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
           />
+        </div>
 
-          <div className="w-1/2 relative">
-            <select
-              className="w-full p-4 bg-gray-50 border border-transparent rounded-2xl outline-none focus:bg-white focus:border-blue-200 transition-all appearance-none text-gray-700 cursor-pointer"
-              value={formData.categoryId}
-              onChange={(e) =>
-                setFormData({ ...formData, categoryId: e.target.value })
-              }
-            >
-              <option value="">เลือกหมวดหมู่</option>
-              {currentCategories.map((cat) => (
-                <option key={cat.id} value={cat.name}>
-                  {cat.emoji} {cat.name}
-                </option>
-              ))}
-            </select>
-            <ChevronDown
-              size={16}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+        <div className="flex gap-4">
+          <div className="w-1/2 clay-card-inset !p-0 overflow-hidden">
+            <input
+              type="number"
+              min="0"
+              placeholder="0.00"
+              className="w-full p-4 bg-transparent outline-none text-slate-800 font-black text-xl placeholder:text-slate-300"
+              value={formData.amount}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val >= 0) {
+                  setFormData({ ...formData, amount: val });
+                }
+              }}
             />
+          </div>
+
+          {/* Custom Category Dropdown */}
+          <div className="w-1/2 relative" ref={dropdownRef}>
+            <div
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="clay-card-inset !p-4 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors"
+            >
+              <span className={`font-bold text-sm truncate ${formData.categoryId ? 'text-slate-800' : 'text-slate-300'}`}>
+                {selectedCategory ? `${selectedCategory.emoji || "💰"} ${selectedCategory.name}` : "หมวดหมู่"}
+              </span>
+              <ChevronDown size={16} className={`text-slate-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+            </div>
+
+            {isDropdownOpen && (
+              <div className="absolute top-full left-0 w-full mt-2 clay-card bg-white !p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="max-h-48 overflow-y-auto scrollbar-hide">
+                  {currentCategories.map((cat) => (
+                    <div
+                      key={cat.id}
+                      onClick={() => {
+                        setFormData({ ...formData, categoryId: cat.name });
+                        setIsDropdownOpen(false);
+                      }}
+                      className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-xl cursor-pointer transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{cat.emoji || "💰"}</span>
+                        <span className="text-sm font-bold text-slate-600">{cat.name}</span>
+                      </div>
+                      {formData.categoryId === cat.name && <Check size={14} className="text-[#6C63FF]" />}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* จัดการหมวดหมู่ */}
+      {/* Add New Category */}
       <div className="pt-2">
         {!isAddingCat ? (
           <button
             type="button"
             onClick={() => setIsAddingCat(true)}
-            className="text-[11px] font-bold uppercase tracking-wider text-blue-400 flex items-center gap-1.5 hover:text-blue-600 transition ml-2"
+            className="text-xs font-black text-[#6C63FF] flex items-center gap-2 hover:opacity-80 transition"
           >
-            <Plus size={14} /> เพิ่มหมวดหมู่ใหม่
+            <Plus size={16} className="bg-[#6C63FF]/10 rounded-lg p-0.5" /> เพิ่มหมวดหมู่ใหม่
           </button>
         ) : (
-          <div className="flex gap-2 items-center p-2 bg-blue-50 rounded-xl animate-in zoom-in-95 duration-200">
+          <div className="flex gap-2 items-center p-2 bg-slate-50 rounded-2xl animate-in zoom-in-95 duration-200">
             <input
               type="text"
               placeholder="ชื่อหมวดหมู่..."
-              className="flex-1 p-2 bg-white text-sm rounded-lg outline-none"
+              className="flex-1 p-2 bg-white text-sm font-bold rounded-xl outline-none clay-card-inset !p-2"
               value={newCatName}
               onChange={(e) => setNewCatName(e.target.value)}
               autoFocus
@@ -159,17 +187,14 @@ const TransactionForm = ({ onAdd, categories, onAddCategory }) => {
             <button
               type="button"
               onClick={handleAddNewCategory}
-              className="bg-blue-500 text-white px-3 py-2 rounded-lg text-xs font-bold"
+              className="bg-[#6C63FF] text-white px-4 py-2 rounded-xl text-xs font-black shadow-lg shadow-[#6C63FF]/20"
             >
-              ตกลง
+              เพิ่ม
             </button>
             <button
               type="button"
-              onClick={() => {
-                setIsAddingCat(false);
-                setNewCatName("");
-              }}
-              className="text-gray-400 p-1"
+              onClick={() => { setIsAddingCat(false); setNewCatName(""); }}
+              className="text-slate-400 hover:text-slate-600 "
             >
               <X size={18} />
             </button>
@@ -179,9 +204,9 @@ const TransactionForm = ({ onAdd, categories, onAddCategory }) => {
 
       <button
         type="submit"
-        className="w-full bg-gray-900 text-white py-4 rounded-2xl font-bold hover:bg-black transition-all transform active:scale-[0.98] shadow-xl shadow-gray-100"
+        className="w-full clay-button-primary !py-5 text-lg hover:scale-[1.02] active:scale-95 transition-all duration-300 shadow-lg shadow-[#2c8160]/30"
       >
-        ยืนยันรายการ
+        บันทึกรายการ
       </button>
     </form>
   );

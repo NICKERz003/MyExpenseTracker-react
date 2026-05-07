@@ -3,7 +3,12 @@ import SummaryCards from "./components/SummaryCards";
 import TransactionForm from "./components/TransactionForm";
 import TransactionList from "./components/TransactionList";
 import ExpenseChart from "./components/ExpenseChart";
+import CategoryManager from "./components/CategoryManager";
+import LandingPage from "./components/LandingPage";
+import CustomDatePicker from "./components/CustomDatePicker";
+import MonthYearPicker from "./components/MonthYearPicker";
 import { useAuth } from "./context/AuthContext";
+import { LogOut, Settings } from "lucide-react";
 
 // --- 1. Import Firebase Tools ที่ต้องใช้ ---
 import { db } from "./firebase";
@@ -16,13 +21,14 @@ import {
   deleteDoc,
   doc,
   serverTimestamp,
+  updateDoc
 } from "firebase/firestore";
 
 function App() {
   const { user, loginWithGoogle, logout } = useAuth();
   const [transactions, setTransactions] = useState([]);
+  const [showCatManager, setShowCatManager] = useState(false);
 
-  // หมวดหมู่ยังคงไว้ที่ LocalStorage หรือจะย้ายไป DB ในอนาคตก็ได้ครับ
   const [categories, setCategories] = useState(() => {
     const saved = localStorage.getItem("MY_CATEGORIES");
     return saved
@@ -51,24 +57,13 @@ function App() {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
-  // --- 2. ดึงข้อมูลจาก Firestore แบบ Real-time ---
   useEffect(() => {
     if (!user) return;
-
-    // กรองเฉพาะข้อมูลของ user ที่ login อยู่
-    const q = query(
-      collection(db, "transactions"),
-      where("userId", "==", user.uid),
-    );
-
+    const q = query(collection(db, "transactions"), where("userId", "==", user.uid));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map((doc) => ({
-        ...doc.data(),
-        id: doc.id,
-      }));
+      const data = snapshot.docs.map((doc) => ({ ...doc.data(), id: doc.id }));
       setTransactions(data);
     });
-
     return () => unsubscribe();
   }, [user]);
 
@@ -76,12 +71,11 @@ function App() {
     localStorage.setItem("MY_CATEGORIES", JSON.stringify(categories));
   }, [categories]);
 
-  // --- 3. ฟังก์ชันจัดการข้อมูลบน Firestore ---
   const addTransaction = async (item) => {
     try {
       await addDoc(collection(db, "transactions"), {
         ...item,
-        userId: user.uid, // ผูกข้อมูลกับ UID ของผู้ใช้
+        userId: user.uid,
         createdAt: serverTimestamp(),
       });
     } catch (error) {
@@ -97,12 +91,33 @@ function App() {
     }
   };
 
-  const addCategory = (type, name) => {
-    const randomEmojis = ["✨", "🌟", "🔥", "🌈", "🎈", "💎", "🎯", "🍀"];
-    const randomEmoji =
-      randomEmojis[Math.floor(Math.random() * randomEmojis.length)];
-    const newCat = { id: Date.now().toString(), name, emoji: randomEmoji };
+  const updateTransaction = async (id, updatedData) => {
+    try {
+      const { id: _, ...data } = updatedData;
+      const transactionRef = doc(db, "transactions", id);
+      await updateDoc(transactionRef, data);
+    } catch (error) {
+      console.error("Error updating document: ", error);
+    }
+  };
+
+  const addCategory = (type, name, emoji = "✨") => {
+    const newCat = { id: Date.now().toString(), name, emoji };
     setCategories((prev) => ({ ...prev, [type]: [...prev[type], newCat] }));
+  };
+
+  const editCategory = (type, id, updatedData) => {
+    setCategories((prev) => ({
+      ...prev,
+      [type]: prev[type].map(cat => cat.id === id ? { ...cat, ...updatedData } : cat)
+    }));
+  };
+
+  const deleteCategory = (type, id) => {
+    setCategories((prev) => ({
+      ...prev,
+      [type]: prev[type].filter(cat => cat.id !== id)
+    }));
   };
 
   const filteredTransactions = useMemo(() => {
@@ -126,91 +141,47 @@ function App() {
   const totalBalance = totalIncome - totalExpense;
 
   if (!user) {
-    return (
-      <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center p-6 text-center">
-        <div className="max-w-sm w-full bg-white p-10 rounded-[3rem] shadow-xl border border-slate-100">
-          <div className="text-6xl mb-6">💰</div>
-          <h1 className="text-3xl font-black text-slate-800 mb-2">My Wallet</h1>
-          <p className="text-slate-400 mb-8 font-medium">
-            จดบันทึกรายรับ-รายจ่ายของคุณให้เป็นระเบียบและปลอดภัย
-          </p>
-          <button
-            onClick={loginWithGoogle}
-            className="w-full flex items-center justify-center gap-3 bg-slate-900 text-white py-4 rounded-2xl font-bold hover:bg-black transition-all shadow-lg active:scale-95"
-          >
-            <img
-              src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/layout/google.png"
-              width="20"
-              alt="google"
-            />
-            เข้าสู่ระบบด้วย Google
-          </button>
-        </div>
-      </div>
-    );
+    return <LandingPage onLogin={loginWithGoogle} />;
   }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] p-4 md:p-8 font-sans">
-      <div className="max-w-6xl mx-auto">
-        <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
-          <div className="flex items-center gap-4">
-            <img
-              src={user.photoURL}
-              alt="Profile"
-              referrerPolicy="no-referrer"
-              className="w-14 h-14 rounded-2xl border-4 border-white shadow-sm"
-            />
+    <div className="min-h-screen bg-[#F0F4F8] p-4 md:p-10 font-sans selection:bg-[#6C63FF] selection:text-white relative">
+      <div className="max-w-7xl mx-auto">
+        <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
+          <div className="flex items-center gap-5">
+            <div className="relative">
+              <img
+                src={user.photoURL}
+                alt="Profile"
+                referrerPolicy="no-referrer"
+                className="w-16 h-16 rounded-[24px] clay-card !p-0 border-4 border-white shadow-xl"
+              />
+              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-400 rounded-full border-4 border-white"></div>
+            </div>
             <div>
-              <h1 className="text-xl font-black text-slate-800 tracking-tight">
-                สวัสดี, {user.displayName} 👋
+              <h1 className="text-2xl font-black text-slate-800 tracking-tight">
+                สวัสดี, {user.displayName.split(" ")[0]} 👋
               </h1>
-              <button
-                onClick={logout}
-                className="text-[10px] font-bold text-red-400 uppercase tracking-widest hover:text-red-600 transition"
-              >
-                Sign Out
-              </button>
+              <p className="text-sm font-bold text-slate-400">มาวางแผนการเงินกันเถอะ</p>
             </div>
           </div>
 
-          <div className="flex gap-2 bg-white p-1.5 rounded-2xl shadow-sm border border-slate-100">
-            <select
-              className="bg-transparent outline-none text-slate-600 font-bold px-3 py-1 cursor-pointer text-sm"
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setShowCatManager(true)}
+              className="clay-card-inset !p-3 text-slate-400 hover:text-[#2c8160] transition-colors"
+              title="Manage Categories"
             >
-              {[
-                "มกราคม",
-                "กุมภาพันธ์",
-                "มีนาคม",
-                "เมษายน",
-                "พฤษภาคม",
-                "มิถุนายน",
-                "กรกฎาคม",
-                "สิงหาคม",
-                "กันยายน",
-                "ตุลาคม",
-                "พฤศจิกายน",
-                "ธันวาคม",
-              ].map((m, i) => (
-                <option key={i} value={i}>
-                  {m}
-                </option>
-              ))}
-            </select>
-            <div className="w-[1px] bg-slate-100 my-1"></div>
-            <select
-              className="bg-transparent outline-none text-slate-600 font-bold px-3 py-1 cursor-pointer text-sm"
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+              <Settings size={20} />
+            </button>
+
+            <button
+              onClick={logout}
+              className="clay-card-inset !p-3 text-red-400 hover:text-red-600 transition-colors"
+              title="Sign Out"
             >
-              {[2024, 2025, 2026, 2027].map((y) => (
-                <option key={y} value={y}>
-                  {y}
-                </option>
-              ))}
-            </select>
+              <LogOut size={20} />
+            </button>
           </div>
         </header>
 
@@ -220,8 +191,8 @@ function App() {
           totalExpense={totalExpense}
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mt-10">
-          <div className="lg:col-span-4 space-y-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 mt-12">
+          <div className="lg:col-span-4 space-y-10">
             <TransactionForm
               onAdd={addTransaction}
               categories={categories}
@@ -234,14 +205,39 @@ function App() {
           </div>
 
           <div className="lg:col-span-8">
-            <TransactionList
-              transactions={filteredTransactions}
-              onDelete={deleteTransaction}
-              categories={categories}
-            />
+            <div className="clay-card bg-white h-full">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+                  <h3 className="text-2xl font-black text-slate-800">รายการล่าสุด</h3>
+                  <MonthYearPicker 
+                    selectedMonth={selectedMonth} 
+                    selectedYear={selectedYear} 
+                    onChange={(m, y) => {
+                      setSelectedMonth(m);
+                      setSelectedYear(y);
+                    }} 
+                  />
+              </div>
+              <TransactionList
+                transactions={filteredTransactions}
+                onDelete={deleteTransaction}
+                onUpdate={updateTransaction}
+                categories={categories}
+              />
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Category Manager Modal */}
+      {showCatManager && (
+        <CategoryManager 
+          categories={categories}
+          onAdd={addCategory}
+          onEdit={editCategory}
+          onDelete={deleteCategory}
+          onClose={() => setShowCatManager(false)}
+        />
+      )}
     </div>
   );
 }

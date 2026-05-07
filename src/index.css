@@ -1,1 +1,86 @@
 @import "tailwindcss";
+
+:root {
+  --primary: #2c8160;
+  --primary-light: #e6f4ed;
+  --bg-gradient: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+}
+
+@theme {
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+}
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased;
+    background-image: var(--bg-gradient);
+    background-attachment: fixed;
+  }
+}
+
+@layer components {
+  .clay-card {
+    @apply bg-white/80 backdrop-blur-md rounded-[2.5rem] p-6 border-2 border-white transition-all duration-500;
+    box-shadow: 
+      20px 20px 60px #d1d9e6,
+      -20px -20px 60px #ffffff;
+  }
+
+  .clay-card-inset {
+    @apply bg-slate-50/50 rounded-3xl p-4 border border-slate-100 transition-all duration-300;
+    box-shadow: inset 6px 6px 12px #d1d9e6, inset -6px -6px 12px #ffffff;
+  }
+
+  /* Base style for buttons to be applied manually or via shared classes */
+  .clay-button-base {
+    @apply px-8 py-4 rounded-2xl font-black transition-all duration-300 active:scale-95;
+    box-shadow: 
+      8px 8px 16px #d1d9e6,
+      -8px -8px 16px #ffffff;
+  }
+
+  .clay-button-primary {
+    @apply px-8 py-4 rounded-2xl font-black transition-all duration-300 active:scale-95 bg-[#2c8160] text-white;
+    box-shadow: 
+      10px 10px 20px rgba(44, 129, 96, 0.2),
+      -5px -5px 15px #ffffff;
+  }
+
+  .clay-button-primary:hover {
+    @apply scale-[1.02];
+    box-shadow: 
+      15px 15px 30px rgba(44, 129, 96, 0.3),
+      -5px -5px 15px #ffffff;
+  }
+
+  .clay-button-secondary {
+    @apply px-8 py-4 rounded-2xl font-black transition-all duration-300 active:scale-95 bg-white text-slate-600;
+    box-shadow: 
+      8px 8px 16px #d1d9e6,
+      -8px -8px 16px #ffffff;
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+::selection {
+  @apply bg-[#2c8160] text-white;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}

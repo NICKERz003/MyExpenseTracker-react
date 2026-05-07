@@ -6,21 +6,18 @@ import {
   ResponsiveContainer,
   Tooltip,
   Legend,
-  Text,
 } from "recharts";
 import { PieChart as ChartIcon } from "lucide-react";
 
 const ExpenseChart = ({ transactions, categories }) => {
   const [viewType, setViewType] = useState("expense");
 
-  // 1. ดึง Emoji ตามชื่อหมวดหมู่
   const getEmoji = (name) => {
     const allCats = [...categories.income, ...categories.expense];
     const found = allCats.find((c) => c.name === name);
     return found ? found.emoji : "💰";
   };
 
-  // 2. เตรียมข้อมูลสำหรับ Chart
   const chartData = transactions
     .filter((t) => t.type === viewType)
     .reduce((acc, curr) => {
@@ -31,7 +28,7 @@ const ExpenseChart = ({ transactions, categories }) => {
         acc.push({
           name: curr.categoryId,
           value: curr.amount,
-          emoji: getEmoji(curr.categoryId), // ดึง Emoji มาเก็บไว้ใน Data ก้อนนี้เลย
+          emoji: getEmoji(curr.categoryId),
         });
       }
       return acc;
@@ -39,7 +36,6 @@ const ExpenseChart = ({ transactions, categories }) => {
 
   const totalAmount = chartData.reduce((sum, item) => sum + item.value, 0);
 
-  // 3. Custom Label สำหรับแสดง Emoji บนแผ่นกราฟ
   const renderCustomizedLabel = ({
     cx,
     cy,
@@ -54,7 +50,6 @@ const ExpenseChart = ({ transactions, categories }) => {
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
 
-    // แสดงเฉพาะถ้าพื้นที่ก้อนนั้นใหญ่พอ (เช่น มากกว่า 5% ของทั้งหมด)
     if (value / totalAmount < 0.05) return null;
 
     return (
@@ -65,97 +60,98 @@ const ExpenseChart = ({ transactions, categories }) => {
         textAnchor="middle"
         dominantBaseline="central"
         fontSize="16"
+        fontWeight="bold"
       >
         {emoji}
       </text>
     );
   };
 
-  const INCOME_COLORS = ["#10b981", "#3b82f6", "#06b6d4", "#14b8a6", "#8b5cf6"];
-  const EXPENSE_COLORS = [
-    "#ef4444",
-    "#f59e0b",
-    "#ec4899",
-    "#8b5cf6",
-    "#6366f1",
-  ];
+  const INCOME_COLORS = ["#2c8160", "#3aa37a", "#48c594", "#56e7ae", "#64ffc8"];
+  const EXPENSE_COLORS = ["#FF6B6B", "#FF8E8E", "#FF4F4F", "#E63946", "#D62828"];
   const colors = viewType === "income" ? INCOME_COLORS : EXPENSE_COLORS;
 
   return (
-    <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 h-[500px] flex flex-col">
-      <div className="flex justify-between items-start mb-6">
+    <div className="clay-card bg-white h-[500px] flex flex-col">
+      <div className="flex justify-between items-start mb-8">
         <div>
-          <h3 className="font-bold text-gray-700 flex items-center gap-2 mb-1">
-            <ChartIcon size={20} className="text-blue-500" />
+          <h3 className="text-xl font-black text-slate-800 flex items-center gap-3">
+            <div className={`p-2 rounded-xl clay-card-inset !p-2 ${viewType === "income" ? "text-[#2c8160]" : "text-[#FF6B6B]"}`}>
+              <ChartIcon size={20} />
+            </div>
             สัดส่วน{viewType === "income" ? "รายรับ" : "รายจ่าย"}
           </h3>
-          <p
-            className={`text-xs font-bold ${viewType === "income" ? "text-green-500" : "text-red-500"}`}
-          >
-            รวม: ฿{totalAmount.toLocaleString()}
+          <p className={`text-sm font-black mt-2 ${viewType === "income" ? "text-[#2c8160]" : "text-[#FF6B6B]"}`}>
+            ยอดรวม: ฿{totalAmount.toLocaleString()}
           </p>
         </div>
 
-        <div className="flex bg-gray-100 p-1 rounded-xl text-xs font-bold">
+        <div className="clay-card-inset !p-1 flex">
           <button
             onClick={() => setViewType("income")}
-            className={`px-3 py-1.5 rounded-lg transition ${viewType === "income" ? "bg-white shadow text-green-600" : "text-gray-400"}`}
+            className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${viewType === "income" ? "bg-white shadow-md text-[#2c8160]" : "text-slate-400"}`}
           >
             รายรับ
           </button>
           <button
             onClick={() => setViewType("expense")}
-            className={`px-3 py-1.5 rounded-lg transition ${viewType === "expense" ? "bg-white shadow text-red-600" : "text-gray-400"}`}
+            className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${viewType === "expense" ? "bg-white shadow-md text-[#FF6B6B]" : "text-slate-400"}`}
           >
             รายจ่าย
           </button>
         </div>
       </div>
 
-      <div className="flex-1">
+      <div className="flex-1 min-h-0">
         {chartData.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
                 data={chartData}
-                innerRadius={60}
-                outerRadius={100}
-                paddingAngle={3}
+                innerRadius={70}
+                outerRadius={110}
+                paddingAngle={5}
                 dataKey="value"
                 labelLine={false}
-                label={renderCustomizedLabel} // เรียกใช้ฟังก์ชันแสดง Emoji
-                animationDuration={1000}
+                label={renderCustomizedLabel}
+                animationDuration={1500}
+                animationBegin={0}
               >
                 {chartData.map((entry, index) => (
                   <Cell
                     key={`cell-${index}`}
                     fill={colors[index % colors.length]}
                     stroke="none"
+                    className="hover:opacity-80 transition-opacity"
                   />
                 ))}
               </Pie>
               <Tooltip
                 contentStyle={{
-                  borderRadius: "20px",
+                  backgroundColor: "white",
+                  borderRadius: "25px",
                   border: "none",
-                  boxShadow: "0 10px 20px rgba(0,0,0,0.1)",
+                  boxShadow: "20px 20px 60px #d1d9e6",
+                  padding: "15px 20px",
                 }}
-                // ปรับ Tooltip ให้แสดง Emoji คู่กับชื่อหมวดหมู่
+                itemStyle={{ fontWeight: "bold" }}
                 formatter={(value, name, props) => [
-                  <span className="font-bold text-slate-800">
-                    ฿{value.toLocaleString()}
-                  </span>,
-                  <span className="text-slate-500">
-                    {props.payload.emoji} {name}
-                  </span>,
+                  <span className="text-slate-800">฿{value.toLocaleString()}</span>,
+                  <span className="text-slate-400">{props.payload.emoji} {name}</span>,
                 ]}
               />
-              <Legend iconType="circle" />
+              <Legend 
+                verticalAlign="bottom" 
+                height={36} 
+                iconType="circle"
+                wrapperStyle={{ fontWeight: "bold", paddingTop: "20px", color: "#64748b" }}
+              />
             </PieChart>
           </ResponsiveContainer>
         ) : (
-          <div className="h-full flex flex-col items-center justify-center text-gray-300 italic text-sm">
-            ไม่มีข้อมูลเดือนนี้ 🍃
+          <div className="h-full flex flex-col items-center justify-center text-slate-300 font-bold italic space-y-4">
+            <div className="text-6xl animate-float">📊</div>
+            <p>ยังไม่มีข้อมูลในส่วนนี้</p>
           </div>
         )}
       </div>
