@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { X, Plus, Edit2, Trash2, Check, LayoutGrid, Smile } from "lucide-react";
+import { X, Plus, Edit2, Trash2, Check, LayoutGrid } from "lucide-react";
 
 const COMMON_EMOJIS = [
   "💰", "🍱", "🚗", "🛍️", "🏠", "🌐", "💳", "🔧", "⛽", "📚", 
@@ -26,6 +26,7 @@ const CategoryManager = ({ categories, onAdd, onEdit, onDelete, onClose }) => {
   };
 
   const handleSaveEdit = (id) => {
+    if (!editForm.name.trim()) return;
     onEdit(activeTab, id, editForm);
     setEditingId(null);
     setShowPickerFor(null);
@@ -50,119 +51,110 @@ const CategoryManager = ({ categories, onAdd, onEdit, onDelete, onClose }) => {
   };
 
   return (
-    <div 
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        zIndex: 9999,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '1rem'
-      }}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div 
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(15, 23, 42, 0.5)',
-          backdropFilter: 'blur(8px)',
-          WebkitBackdropFilter: 'blur(8px)',
-        }}
-        className="animate-in fade-in duration-300"
+        className="absolute inset-0 bg-slate-950/60 backdrop-blur-md animate-in fade-in duration-300"
         onClick={onClose}
       ></div>
 
-      {/* Modal Window */}
+      {/* Modal Card */}
       <div 
-        className="relative w-full max-w-lg clay-card bg-white p-8 animate-in zoom-in-95 fade-in duration-300 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] border-2 border-white/50 flex flex-col"
-        style={{ maxHeight: '90vh' }}
+        className="relative w-full max-w-lg glass-panel bg-slate-900 border border-slate-800/80 p-8 animate-in zoom-in-95 duration-300 shadow-2xl flex flex-col"
+        style={{ maxHeight: '85vh' }}
       >
         
         {/* Close Button */}
         <button 
           onClick={onClose}
-          className="absolute top-4 right-4 w-10 h-10 bg-white rounded-full clay-card !p-0 flex items-center justify-center text-slate-400 hover:text-red-500 hover:scale-110 transition-all z-10 shadow-lg"
+          className="absolute top-4 right-4 p-2 text-slate-400 hover:text-rose-400 rounded-full hover:bg-slate-850 transition-all cursor-pointer"
         >
           <X size={20} />
         </button>
 
         {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
-          <div className="w-12 h-12 bg-[#2c8160] rounded-2xl flex items-center justify-center text-white clay-button shadow-lg shadow-[#2c8160]/30">
-            <LayoutGrid size={24} />
+        <div className="flex items-center gap-4 mb-6">
+          <div className="w-11 h-11 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-center text-emerald-400">
+            <LayoutGrid size={20} />
           </div>
           <div>
-            <h2 className="text-2xl font-black text-slate-800 tracking-tight">ตั้งค่าหมวดหมู่</h2>
-            <p className="text-xs font-bold text-slate-400">จัดการอิโมจิและชื่อรายการ</p>
+            <h2 className="text-lg font-black text-white">ตั้งค่าหมวดหมู่</h2>
+            <p className="text-xs font-bold text-slate-500">จัดการชื่อและไอคอนหมวดหมู่ธุรกรรมของคุณ</p>
           </div>
         </div>
 
         {/* Tab Switcher */}
-        <div className="clay-card-inset !p-1.5 flex mb-8">
+        <div className="glass-panel-inset !p-1 flex bg-slate-950/60 border border-slate-800/40 mb-6">
           <button 
             onClick={() => { setActiveTab("expense"); setIsAdding(false); setEditingId(null); setShowPickerFor(null); }}
-            className={`flex-1 py-3 rounded-2xl text-sm font-black transition-all ${activeTab === "expense" ? 'bg-white shadow-md text-[#FF6B6B]' : 'text-slate-400 hover:text-slate-600'}`}
+            className={`flex-1 py-3 rounded-xl text-xs font-black transition-all cursor-pointer ${
+              activeTab === "expense" 
+                ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/20' 
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
           >
             รายจ่าย
           </button>
           <button 
             onClick={() => { setActiveTab("income"); setIsAdding(false); setEditingId(null); setShowPickerFor(null); }}
-            className={`flex-1 py-3 rounded-2xl text-sm font-black transition-all ${activeTab === "income" ? 'bg-white shadow-md text-[#2c8160]' : 'text-slate-400 hover:text-slate-600'}`}
+            className={`flex-1 py-3 rounded-xl text-xs font-black transition-all cursor-pointer ${
+              activeTab === "income" 
+                ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' 
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
           >
             รายรับ
           </button>
         </div>
 
-        {/* List */}
+        {/* List Content */}
         <div className="flex-1 overflow-y-auto space-y-3 pr-1 scrollbar-hide pb-4">
           {currentCats.map((cat) => (
             <div key={cat.id} className="relative">
-              <div className="clay-card-inset !p-3 flex items-center justify-between group bg-slate-50/30">
+              <div className="glass-panel-inset !p-3 flex items-center justify-between group bg-slate-950/40 border border-slate-850">
                 {editingId === cat.id ? (
                   <div className="flex-1 flex gap-2 items-center">
                     <button 
                       onClick={() => setShowPickerFor(showPickerFor === cat.id ? null : cat.id)}
-                      className="w-12 h-12 flex items-center justify-center bg-white rounded-xl clay-card-inset !p-0 text-xl hover:scale-105 transition-transform"
+                      className="w-10 h-10 flex items-center justify-center bg-slate-900 border border-slate-850 rounded-xl text-xl hover:scale-105 transition-transform"
                     >
                       {editForm.emoji}
                     </button>
                     <input 
                       type="text" 
-                      className="flex-1 p-2 px-4 bg-white rounded-xl clay-card-inset !p-2 outline-none font-bold text-sm" 
+                      className="flex-1 p-2 px-3 bg-slate-900 border border-slate-800 rounded-xl outline-none font-bold text-xs text-white" 
                       value={editForm.name}
                       onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
                       autoFocus
                     />
-                    <button onClick={() => handleSaveEdit(cat.id)} className="bg-green-500 text-white p-2 rounded-xl shadow-lg transition-transform active:scale-90"><Check size={18} /></button>
+                    <button 
+                      onClick={() => handleSaveEdit(cat.id)} 
+                      className="bg-emerald-500 hover:bg-emerald-600 text-white p-2 rounded-xl transition-transform active:scale-90 cursor-pointer"
+                    >
+                      <Check size={16} />
+                    </button>
                   </div>
                 ) : (
                   <>
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 clay-card bg-white !p-0 flex items-center justify-center text-2xl shadow-sm border border-slate-100">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-slate-900 border border-slate-850 rounded-xl flex items-center justify-center text-xl shadow-sm">
                         {cat.emoji}
                       </div>
-                      <span className="font-black text-slate-700 tracking-tight">{cat.name}</span>
+                      <span className="font-bold text-slate-200 text-sm tracking-tight">{cat.name}</span>
                     </div>
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                    
+                    <div className="flex gap-1 md:opacity-0 group-hover:opacity-100 transition-opacity">
                       <button 
                         onClick={() => handleStartEdit(cat)}
-                        className="w-9 h-9 flex items-center justify-center clay-card-inset !p-0 text-slate-400 hover:text-[#6C63FF] hover:bg-white"
+                        className="w-8 h-8 flex items-center justify-center bg-slate-900 border border-slate-850 text-slate-400 hover:text-emerald-400 rounded-lg hover:border-slate-700 transition cursor-pointer"
                       >
-                        <Edit2 size={16} />
+                        <Edit2 size={13} />
                       </button>
                       <button 
                         onClick={() => onDelete(activeTab, cat.id)}
-                        className="w-9 h-9 flex items-center justify-center clay-card-inset !p-0 text-slate-400 hover:text-red-500 hover:bg-white"
+                        className="w-8 h-8 flex items-center justify-center bg-slate-900 border border-slate-850 text-slate-400 hover:text-rose-455 rounded-lg hover:border-slate-700 transition cursor-pointer"
                       >
-                        <Trash2 size={16} />
+                        <Trash2 size={13} />
                       </button>
                     </div>
                   </>
@@ -171,17 +163,17 @@ const CategoryManager = ({ categories, onAdd, onEdit, onDelete, onClose }) => {
               
               {/* Inline Emoji Picker for Editing */}
               {showPickerFor === cat.id && (
-                <div className="absolute top-full left-0 w-full mt-2 z-50 clay-card bg-white p-4 shadow-2xl animate-in zoom-in-95 duration-200">
+                <div className="absolute top-full left-0 w-full mt-2 z-50 glass-panel bg-slate-950 p-4 border border-slate-800 shadow-2xl animate-in zoom-in-95 duration-200">
                   <div className="flex justify-between items-center mb-3">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">เลือกอิโมจิ</p>
-                    <button onClick={() => setShowPickerFor(null)} className="text-slate-300 hover:text-red-500"><X size={14} /></button>
+                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">เลือกไอคอนอิโมจิ</p>
+                    <button onClick={() => setShowPickerFor(null)} className="text-slate-400 hover:text-white"><X size={14} /></button>
                   </div>
                   <div className="grid grid-cols-6 gap-2">
                     {COMMON_EMOJIS.map(e => (
                       <button 
                         key={e} 
                         onClick={() => selectEmoji(e)}
-                        className="w-10 h-10 flex items-center justify-center hover:bg-slate-50 rounded-xl transition-all text-xl hover:scale-110 active:scale-90"
+                        className="w-9 h-9 flex items-center justify-center hover:bg-slate-900 rounded-lg text-lg hover:scale-110 active:scale-90 transition-all cursor-pointer"
                       >
                         {e}
                       </button>
@@ -195,36 +187,37 @@ const CategoryManager = ({ categories, onAdd, onEdit, onDelete, onClose }) => {
           {/* Add Section */}
           <div className="relative mt-4">
             {isAdding ? (
-              <div className="p-4 bg-[#2c8160]/5 rounded-3xl border-2 border-dashed border-[#2c8160]/20 space-y-4 animate-in zoom-in-95 duration-300">
+              <div className="p-4 bg-slate-950/60 rounded-2xl border border-slate-800 space-y-4 animate-in zoom-in-95 duration-300">
                 <div className="flex gap-3">
                     <button 
                       onClick={() => setShowPickerFor(showPickerFor === 'add' ? null : 'add')}
-                      className="w-16 h-16 flex items-center justify-center bg-white rounded-2xl clay-card-inset !p-0 text-2xl hover:scale-105 transition-transform"
+                      className="w-12 h-12 flex items-center justify-center bg-slate-900 border border-slate-850 rounded-xl text-xl hover:scale-105 transition-transform"
                     >
                       {addForm.emoji}
                     </button>
                     <div className="flex-1">
-                      <p className="text-[10px] font-black text-slate-400 mb-1 uppercase px-1">ชื่อหมวดหมู่</p>
+                      <label className="block text-[10px] font-black text-slate-500 mb-1 px-1 uppercase tracking-widest">ชื่อหมวดหมู่</label>
                       <input 
                         type="text" 
-                        placeholder="เช่น ค่าอาหาร..."
-                        className="w-full p-3 px-5 bg-white rounded-2xl clay-card-inset !p-3 outline-none font-bold" 
+                        placeholder="เช่น ค่าอาหาร, สังสรรค์..."
+                        className="w-full p-2.5 bg-slate-900 border border-slate-800 rounded-xl outline-none font-bold text-sm text-white" 
                         value={addForm.name}
                         onChange={(e) => setAddForm({ ...addForm, name: e.target.value })}
                         autoFocus
                       />
                     </div>
                 </div>
+                
                 <div className="flex gap-2">
                   <button 
                     onClick={handleAdd}
-                    className="flex-1 clay-button-primary !py-4 flex items-center justify-center gap-2"
+                    className="flex-1 btn-primary !py-2.5 text-xs flex items-center justify-center gap-1.5"
                   >
-                    บันทึกหมวดหมู่ <Check size={18} />
+                    บันทึก <Check size={14} />
                   </button>
                   <button 
                     onClick={() => { setIsAdding(false); setShowPickerFor(null); }}
-                    className="w-14 clay-card-inset !p-0 flex items-center justify-center text-slate-400 text-xs font-bold"
+                    className="px-4 py-2.5 bg-slate-900 border border-slate-800 text-slate-400 hover:text-white rounded-xl text-xs font-bold transition cursor-pointer"
                   >
                     ยกเลิก
                   </button>
@@ -233,25 +226,25 @@ const CategoryManager = ({ categories, onAdd, onEdit, onDelete, onClose }) => {
             ) : (
               <button 
                 onClick={() => { setIsAdding(true); setEditingId(null); setShowPickerFor(null); }}
-                className="w-full py-5 bg-white border-2 border-dashed border-slate-200 rounded-[2.5rem] text-slate-400 font-black hover:border-[#2c8160] hover:text-[#2c8160] transition-all flex items-center justify-center gap-3 active:scale-95"
+                className="w-full py-4 bg-slate-950/30 border border-dashed border-slate-850 hover:border-emerald-500/30 hover:bg-slate-950/60 text-slate-400 hover:text-emerald-400 rounded-2xl text-xs font-bold transition-all flex items-center justify-center gap-2 active:scale-98 cursor-pointer"
               >
-                <Plus size={24} className="bg-[#2c8160]/10 p-1 rounded-lg" /> เพิ่มหมวดหมู่ใหม่
+                <Plus size={16} /> เพิ่มหมวดหมู่ใหม่
               </button>
             )}
 
             {/* Inline Emoji Picker for Adding */}
             {showPickerFor === 'add' && (
-              <div className="absolute bottom-full left-0 w-full mb-2 z-50 clay-card bg-white p-5 shadow-2xl animate-in slide-in-from-bottom-4 duration-200">
-                <div className="flex justify-between items-center mb-4">
-                  <p className="text-xs font-black text-slate-400 uppercase tracking-widest">เลือกอิโมจิให้หมวดหมู่</p>
-                  <button onClick={() => setShowPickerFor(null)} className="text-slate-300 hover:text-red-500"><X size={16} /></button>
+              <div className="absolute bottom-full left-0 w-full mb-2 z-50 glass-panel bg-slate-950 p-4 border border-slate-800 shadow-2xl animate-in slide-in-from-bottom-2 duration-200">
+                <div className="flex justify-between items-center mb-3">
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">เลือกไอคอนอิโมจิ</p>
+                  <button onClick={() => setShowPickerFor(null)} className="text-slate-400 hover:text-white"><X size={14} /></button>
                 </div>
-                <div className="grid grid-cols-6 gap-3">
+                <div className="grid grid-cols-6 gap-2">
                   {COMMON_EMOJIS.map(e => (
                     <button 
                       key={e} 
                       onClick={() => selectEmoji(e)}
-                      className="w-12 h-12 flex items-center justify-center hover:bg-slate-50 rounded-2xl transition-all text-2xl hover:scale-110 active:scale-90"
+                      className="w-9 h-9 flex items-center justify-center hover:bg-slate-900 rounded-lg text-lg hover:scale-110 active:scale-90 transition-all cursor-pointer"
                     >
                       {e}
                     </button>
@@ -262,12 +255,6 @@ const CategoryManager = ({ categories, onAdd, onEdit, onDelete, onClose }) => {
           </div>
         </div>
 
-        {/* Footer Info */}
-        <div className="mt-4 text-center">
-          <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">
-            Click outside or use (x) to close
-          </p>
-        </div>
       </div>
     </div>
   );

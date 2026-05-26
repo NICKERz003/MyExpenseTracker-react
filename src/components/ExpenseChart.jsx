@@ -59,7 +59,7 @@ const ExpenseChart = ({ transactions, categories }) => {
         fill="white"
         textAnchor="middle"
         dominantBaseline="central"
-        fontSize="16"
+        fontSize="14"
         fontWeight="bold"
       >
         {emoji}
@@ -67,91 +67,116 @@ const ExpenseChart = ({ transactions, categories }) => {
     );
   };
 
-  const INCOME_COLORS = ["#2c8160", "#3aa37a", "#48c594", "#56e7ae", "#64ffc8"];
-  const EXPENSE_COLORS = ["#FF6B6B", "#FF8E8E", "#FF4F4F", "#E63946", "#D62828"];
+  const INCOME_COLORS = ["#10b981", "#059669", "#34d399", "#047857", "#6ee7b7", "#065f46"];
+  const EXPENSE_COLORS = ["#f43f5e", "#e11d48", "#fb7185", "#be123c", "#fda4af", "#9f1239"];
   const colors = viewType === "income" ? INCOME_COLORS : EXPENSE_COLORS;
 
   return (
-    <div className="clay-card bg-white h-[500px] flex flex-col">
-      <div className="flex justify-between items-start mb-8">
+    <div className="glass-panel h-[480px] flex flex-col hover:border-slate-800/80 duration-300">
+      
+      {/* Header */}
+      <div className="flex justify-between items-start mb-6">
         <div>
-          <h3 className="text-xl font-black text-slate-800 flex items-center gap-3">
-            <div className={`p-2 rounded-xl clay-card-inset !p-2 ${viewType === "income" ? "text-[#2c8160]" : "text-[#FF6B6B]"}`}>
-              <ChartIcon size={20} />
+          <h3 className="text-base font-black text-white flex items-center gap-2">
+            <div className={`p-2 rounded-xl border ${
+              viewType === "income" 
+                ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" 
+                : "bg-rose-500/10 border-rose-500/20 text-rose-400"
+            }`}>
+              <ChartIcon size={16} />
             </div>
             สัดส่วน{viewType === "income" ? "รายรับ" : "รายจ่าย"}
           </h3>
-          <p className={`text-sm font-black mt-2 ${viewType === "income" ? "text-[#2c8160]" : "text-[#FF6B6B]"}`}>
-            ยอดรวม: ฿{totalAmount.toLocaleString()}
+          <p className={`text-sm font-black mt-2 ${
+            viewType === "income" ? "text-emerald-400" : "text-rose-400"
+          }`}>
+            ยอดรวม: ฿{totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
         </div>
 
-        <div className="clay-card-inset !p-1 flex">
+        {/* View Toggle */}
+        <div className="bg-slate-950/60 border border-slate-850 rounded-2xl p-1 flex">
           <button
             onClick={() => setViewType("income")}
-            className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${viewType === "income" ? "bg-white shadow-md text-[#2c8160]" : "text-slate-400"}`}
+            className={`px-3.5 py-1.5 rounded-xl text-[10px] font-black transition-all cursor-pointer ${
+              viewType === "income" 
+                ? "bg-slate-800 text-emerald-400 border border-slate-700/50 shadow-md" 
+                : "text-slate-500 hover:text-slate-350"
+            }`}
           >
             รายรับ
           </button>
           <button
             onClick={() => setViewType("expense")}
-            className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${viewType === "expense" ? "bg-white shadow-md text-[#FF6B6B]" : "text-slate-400"}`}
+            className={`px-3.5 py-1.5 rounded-xl text-[10px] font-black transition-all cursor-pointer ${
+              viewType === "expense" 
+                ? "bg-slate-800 text-rose-450 border border-slate-700/50 shadow-md" 
+                : "text-slate-500 hover:text-slate-350"
+            }`}
           >
             รายจ่าย
           </button>
         </div>
       </div>
 
-      <div className="flex-1 min-h-0">
+      {/* Chart Section */}
+      <div className="flex-1 min-h-0 relative">
         {chartData.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
                 data={chartData}
-                innerRadius={70}
-                outerRadius={110}
-                paddingAngle={5}
+                innerRadius={65}
+                outerRadius={100}
+                paddingAngle={4}
                 dataKey="value"
                 labelLine={false}
                 label={renderCustomizedLabel}
-                animationDuration={1500}
+                animationDuration={1000}
                 animationBegin={0}
               >
                 {chartData.map((entry, index) => (
                   <Cell
                     key={`cell-${index}`}
                     fill={colors[index % colors.length]}
-                    stroke="none"
-                    className="hover:opacity-80 transition-opacity"
+                    stroke="#090d16"
+                    strokeWidth={2}
+                    className="hover:opacity-90 transition-opacity duration-200"
                   />
                 ))}
               </Pie>
               <Tooltip
                 contentStyle={{
-                  backgroundColor: "white",
-                  borderRadius: "25px",
-                  border: "none",
-                  boxShadow: "20px 20px 60px #d1d9e6",
-                  padding: "15px 20px",
+                  backgroundColor: "#0c1220",
+                  borderRadius: "16px",
+                  border: "1px solid rgba(255, 255, 255, 0.08)",
+                  boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.5)",
+                  padding: "10px 15px",
                 }}
                 itemStyle={{ fontWeight: "bold" }}
                 formatter={(value, name, props) => [
-                  <span className="text-slate-800">฿{value.toLocaleString()}</span>,
+                  <span className="text-white">฿{value.toLocaleString()}</span>,
                   <span className="text-slate-400">{props.payload.emoji} {name}</span>,
                 ]}
               />
               <Legend 
                 verticalAlign="bottom" 
-                height={36} 
+                height={40} 
                 iconType="circle"
-                wrapperStyle={{ fontWeight: "bold", paddingTop: "20px", color: "#64748b" }}
+                iconSize={8}
+                wrapperStyle={{ 
+                  fontSize: "11px", 
+                  fontWeight: "bold", 
+                  paddingTop: "15px", 
+                  color: "#94a3b8" 
+                }}
               />
             </PieChart>
           </ResponsiveContainer>
         ) : (
-          <div className="h-full flex flex-col items-center justify-center text-slate-300 font-bold italic space-y-4">
-            <div className="text-6xl animate-float">📊</div>
-            <p>ยังไม่มีข้อมูลในส่วนนี้</p>
+          <div className="h-full flex flex-col items-center justify-center text-slate-500 font-bold space-y-4">
+            <div className="text-5xl animate-float">📊</div>
+            <p className="text-xs">ยังไม่มีข้อมูลในส่วนนี้</p>
           </div>
         )}
       </div>

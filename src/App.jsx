@@ -5,12 +5,15 @@ import TransactionList from "./components/TransactionList";
 import ExpenseChart from "./components/ExpenseChart";
 import CategoryManager from "./components/CategoryManager";
 import LandingPage from "./components/LandingPage";
-import CustomDatePicker from "./components/CustomDatePicker";
 import MonthYearPicker from "./components/MonthYearPicker";
+import Sidebar from "./components/Sidebar";
+import BottomNav from "./components/BottomNav";
+import Toast from "./components/Toast";
+import AnalyticsView from "./components/AnalyticsView";
 import { useAuth } from "./context/AuthContext";
-import { LogOut, Settings } from "lucide-react";
+import { LogOut, Plus, Wallet, Menu } from "lucide-react";
 
-// --- 1. Import Firebase Tools ที่ต้องใช้ ---
+// --- Import Firebase Tools ---
 import { db } from "./firebase";
 import {
   collection,
@@ -26,9 +29,15 @@ import {
 
 function App() {
   const { user, loginWithGoogle, logout } = useAuth();
-  const [transactions, setTransactions] = useState([]);
-  const [showCatManager, setShowCatManager] = useState(false);
+  
+  // Navigation & Shell States
+  const [activeTab, setActiveTab] = useState("dashboard");
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
+  const [toast, setToast] = useState(null);
 
+  // Core Data States
+  const [transactions, setTransactions] = useState([]);
   const [categories, setCategories] = useState(() => {
     const saved = localStorage.getItem("MY_CATEGORIES");
     return saved
@@ -54,9 +63,11 @@ function App() {
         };
   });
 
+  // Date filters
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
+  // Real-time Firestore sync
   useEffect(() => {
     if (!user) return;
     const q = query(collection(db, "transactions"), where("userId", "==", user.uid));
@@ -67,10 +78,17 @@ function App() {
     return () => unsubscribe();
   }, [user]);
 
+  // Sync Categories with localStorage
   useEffect(() => {
     localStorage.setItem("MY_CATEGORIES", JSON.stringify(categories));
   }, [categories]);
 
+  // Toast Helper
+  const showToast = (message, type = "success") => {
+    setToast({ message, type });
+  };
+
+  // Transaction CRUD Actions
   const addTransaction = async (item) => {
     try {
       await addDoc(collection(db, "transactions"), {
@@ -78,16 +96,20 @@ function App() {
         userId: user.uid,
         createdAt: serverTimestamp(),
       });
+      showToast("บันทึกรายการสำเร็จแล้ว");
     } catch (error) {
       console.error("Error adding document: ", error);
+      showToast("เกิดข้อผิดพลาดในการบันทึกรายการ", "error");
     }
   };
 
   const deleteTransaction = async (id) => {
     try {
       await deleteDoc(doc(db, "transactions", id));
+      showToast("ลบรายการธุรกรรมเรียบร้อยแล้ว", "info");
     } catch (error) {
       console.error("Error deleting document: ", error);
+      showToast("เกิดข้อผิดพลาดในการลบรายการ", "error");
     }
   };
 
@@ -96,14 +118,18 @@ function App() {
       const { id: _, ...data } = updatedData;
       const transactionRef = doc(db, "transactions", id);
       await updateDoc(transactionRef, data);
+      showToast("อัปเดตรายการเรียบร้อยแล้ว");
     } catch (error) {
       console.error("Error updating document: ", error);
+      showToast("เกิดข้อผิดพลาดในการอัปเดตรายการ", "error");
     }
   };
 
+  // Category Actions
   const addCategory = (type, name, emoji = "✨") => {
     const newCat = { id: Date.now().toString(), name, emoji };
     setCategories((prev) => ({ ...prev, [type]: [...prev[type], newCat] }));
+    showToast(`เพิ่มหมวดหมู่ "${name}" สำเร็จ`);
   };
 
   const editCategory = (type, id, updatedData) => {
@@ -111,6 +137,7 @@ function App() {
       ...prev,
       [type]: prev[type].map(cat => cat.id === id ? { ...cat, ...updatedData } : cat)
     }));
+    showToast("แก้ไขรายละเอียดหมวดหมู่เรียบร้อย");
   };
 
   const deleteCategory = (type, id) => {
@@ -118,8 +145,10 @@ function App() {
       ...prev,
       [type]: prev[type].filter(cat => cat.id !== id)
     }));
+    showToast("ลบหมวดหมู่เรียบร้อยแล้ว", "info");
   };
 
+  // Calculations for filtered transactions
   const filteredTransactions = useMemo(() => {
     return transactions.filter((t) => {
       const tDate = new Date(t.date);
@@ -130,92 +159,155 @@ function App() {
     });
   }, [transactions, selectedMonth, selectedYear]);
 
-  const totalIncome = filteredTransactions
-    .filter((t) => t.type === "income")
-    .reduce((a, b) => a + b.amount, 0);
+  const totalIncome = useMemo(() => {
+    return filteredTransactions
+      .filter((t) => t.type === "income")
+      .reduce((a, b) => a + b.amount, 0);
+  }, [filteredTransactions]);
 
-  const totalExpense = filteredTransactions
-    .filter((t) => t.type === "expense")
-    .reduce((a, b) => a + b.amount, 0);
+  const totalExpense = useMemo(() => {
+    return filteredTransactions
+      .filter((t) => t.type === "expense")
+      .reduce((a, b) => a + b.amount, 0);
+  }, [filteredTransactions]);
 
   const totalBalance = totalIncome - totalExpense;
+
+  // Recent transactions for the dashboard view
+  const recentTransactions = useMemo(() => {
+    return [...filteredTransactions]
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
+      .slice(0, 5);
+  }, [filteredTransactions]);
 
   if (!user) {
     return <LandingPage onLogin={loginWithGoogle} />;
   }
 
   return (
-    <div className="min-h-screen bg-[#F0F4F8] p-4 md:p-10 font-sans selection:bg-[#6C63FF] selection:text-white relative">
-      <div className="max-w-7xl mx-auto">
-        <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
-          <div className="flex items-center gap-5">
-            <div className="relative">
-              <img
-                src={user.photoURL}
-                alt="Profile"
-                referrerPolicy="no-referrer"
-                className="w-16 h-16 rounded-[24px] clay-card !p-0 border-4 border-white shadow-xl"
-              />
-              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-400 rounded-full border-4 border-white"></div>
-            </div>
+    <div className="flex min-h-screen bg-[#090d16] text-slate-100">
+      
+      {/* Sidebar Desktop navigation */}
+      <Sidebar 
+        activeTab={activeTab} 
+        setActiveTab={setActiveTab} 
+        user={user} 
+        onLogout={logout} 
+        isCollapsed={isSidebarCollapsed}
+        setIsCollapsed={setIsSidebarCollapsed}
+      />
+
+      {/* Main Layout Container */}
+      <div className="flex-1 flex flex-col min-w-0 pb-20 md:pb-0">
+        
+        {/* Top Navbar */}
+        <header className="sticky top-0 bg-[#090d16]/80 backdrop-blur-md border-b border-slate-900 px-6 py-4 flex items-center justify-between z-20">
+          
+          {/* User Welcome */}
+          <div className="flex items-center gap-3">
+            <img 
+              src={user.photoURL} 
+              alt="Profile" 
+              referrerPolicy="no-referrer"
+              className="w-9 h-9 rounded-xl md:hidden object-cover border border-slate-800"
+            />
             <div>
-              <h1 className="text-2xl font-black text-slate-800 tracking-tight">
+              <h1 className="text-sm md:text-base font-black text-white leading-tight">
                 สวัสดี, {user.displayName.split(" ")[0]} 👋
               </h1>
-              <p className="text-sm font-bold text-slate-400">มาวางแผนการเงินกันเถอะ</p>
+              <p className="text-[10px] md:text-xs text-slate-500 font-semibold mt-0.5">วางแผนการเงินในวันนี้เพื่ออนาคตของคุณ</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setShowCatManager(true)}
-              className="clay-card-inset !p-3 text-slate-400 hover:text-[#2c8160] transition-colors"
-              title="Manage Categories"
-            >
-              <Settings size={20} />
-            </button>
+          {/* Quick Actions (Month Selector, Add Button, Log out mobile) */}
+          <div className="flex items-center gap-3">
+            {/* Month Year Selector */}
+            {(activeTab === "dashboard" || activeTab === "transactions" || activeTab === "analytics") && (
+              <MonthYearPicker 
+                selectedMonth={selectedMonth} 
+                selectedYear={selectedYear} 
+                onChange={(m, y) => {
+                  setSelectedMonth(m);
+                  setSelectedYear(y);
+                }} 
+              />
+            )}
 
-            <button
+            {/* Desktop Add Transaction Button */}
+            <button 
+              onClick={() => setIsTransactionModalOpen(true)}
+              className="hidden md:flex btn-primary !py-2.5 !px-5 text-sm"
+            >
+              <Plus size={16} /> บันทึกรายการ
+            </button>
+            
+            {/* Mobile Log out button */}
+            <button 
               onClick={logout}
-              className="clay-card-inset !p-3 text-red-400 hover:text-red-600 transition-colors"
+              className="p-2.5 rounded-xl border border-slate-900 bg-slate-950/40 text-slate-500 hover:text-rose-455 md:hidden cursor-pointer"
               title="Sign Out"
             >
-              <LogOut size={20} />
+              <LogOut size={16} />
             </button>
           </div>
         </header>
 
-        <SummaryCards
-          totalBalance={totalBalance}
-          totalIncome={totalIncome}
-          totalExpense={totalExpense}
-        />
+        {/* Content Container */}
+        <main className="flex-1 p-6 md:p-10 max-w-7xl w-full mx-auto overflow-y-auto">
+          
+          {/* Dashboard Tab */}
+          {activeTab === "dashboard" && (
+            <div className="space-y-8 animate-in fade-in duration-300">
+              
+              {/* Financial Stats Summary */}
+              <SummaryCards
+                totalBalance={totalBalance}
+                totalIncome={totalIncome}
+                totalExpense={totalExpense}
+              />
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 mt-12">
-          <div className="lg:col-span-4 space-y-10">
-            <TransactionForm
-              onAdd={addTransaction}
-              categories={categories}
-              onAddCategory={addCategory}
-            />
-            <ExpenseChart
-              transactions={filteredTransactions}
-              categories={categories}
-            />
-          </div>
-
-          <div className="lg:col-span-8">
-            <div className="clay-card bg-white h-full">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-                  <h3 className="text-2xl font-black text-slate-800">รายการล่าสุด</h3>
-                  <MonthYearPicker 
-                    selectedMonth={selectedMonth} 
-                    selectedYear={selectedYear} 
-                    onChange={(m, y) => {
-                      setSelectedMonth(m);
-                      setSelectedYear(y);
-                    }} 
+              {/* Main Charts & List Split */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                
+                {/* Left Side: Distribution Chart */}
+                <div className="lg:col-span-4">
+                  <ExpenseChart
+                    transactions={filteredTransactions}
+                    categories={categories}
                   />
+                </div>
+
+                {/* Right Side: Recent Transactions */}
+                <div className="lg:col-span-8 glass-panel flex flex-col h-[480px]">
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-base font-black text-white">รายการธุรกรรมล่าสุด</h3>
+                    <button 
+                      onClick={() => setActiveTab("transactions")}
+                      className="text-xs font-bold text-emerald-400 hover:underline cursor-pointer"
+                    >
+                      ดูทั้งหมด
+                    </button>
+                  </div>
+                  
+                  <div className="flex-1 overflow-y-auto scrollbar-hide">
+                    <TransactionList
+                      transactions={recentTransactions}
+                      onDelete={deleteTransaction}
+                      onUpdate={updateTransaction}
+                      categories={categories}
+                    />
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          )}
+
+          {/* All Transactions Tab */}
+          {activeTab === "transactions" && (
+            <div className="glass-panel min-h-[500px] animate-in fade-in duration-300">
+              <div className="flex justify-between items-center mb-6 border-b border-slate-800/40 pb-4">
+                <h3 className="text-base font-black text-white">รายการธุรกรรมทั้งหมด</h3>
               </div>
               <TransactionList
                 transactions={filteredTransactions}
@@ -224,20 +316,57 @@ function App() {
                 categories={categories}
               />
             </div>
-          </div>
-        </div>
+          )}
+
+          {/* Analytics View Tab */}
+          {activeTab === "analytics" && (
+            <AnalyticsView
+              transactions={filteredTransactions}
+              categories={categories}
+              selectedMonth={selectedMonth}
+              selectedYear={selectedYear}
+            />
+          )}
+
+        </main>
       </div>
 
-      {/* Category Manager Modal */}
-      {showCatManager && (
+      {/* Categories Modal Manager */}
+      {activeTab === "categories" && (
         <CategoryManager 
           categories={categories}
           onAdd={addCategory}
           onEdit={editCategory}
           onDelete={deleteCategory}
-          onClose={() => setShowCatManager(false)}
+          onClose={() => setActiveTab("dashboard")}
         />
       )}
+
+      {/* Floating Add Transaction Modal */}
+      <TransactionForm
+        isOpen={isTransactionModalOpen}
+        onClose={() => setIsTransactionModalOpen(false)}
+        onAdd={addTransaction}
+        categories={categories}
+        onAddCategory={addCategory}
+      />
+
+      {/* Mobile Bottom Navigation Bar */}
+      <BottomNav 
+        activeTab={activeTab} 
+        setActiveTab={setActiveTab} 
+        onAddClick={() => setIsTransactionModalOpen(true)}
+      />
+
+      {/* Global Toast Alert Notifications */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
+
     </div>
   );
 }
