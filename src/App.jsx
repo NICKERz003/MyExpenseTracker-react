@@ -201,7 +201,7 @@ function App() {
       <div className="flex-1 flex flex-col min-w-0 pb-20 md:pb-0">
         
         {/* Top Navbar */}
-        <header className="sticky top-0 bg-[#090d16]/80 backdrop-blur-md border-b border-slate-900 px-6 py-4 flex items-center justify-between z-20">
+        <header className="sticky top-0 bg-[#090d16]/80 backdrop-blur-md border-b border-slate-900 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between z-20">
           
           {/* User Welcome */}
           <div className="flex items-center gap-3">
@@ -215,12 +215,12 @@ function App() {
               <h1 className="text-sm md:text-base font-black text-white leading-tight">
                 สวัสดี, {user.displayName.split(" ")[0]} 👋
               </h1>
-              <p className="text-[10px] md:text-xs text-slate-500 font-semibold mt-0.5">วางแผนการเงินในวันนี้เพื่ออนาคตของคุณ</p>
+              <p className="hidden sm:block text-[10px] md:text-xs text-slate-500 font-semibold mt-0.5">วางแผนการเงินในวันนี้เพื่ออนาคตของคุณ</p>
             </div>
           </div>
 
           {/* Quick Actions (Month Selector, Add Button, Log out mobile) */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             {/* Month Year Selector */}
             {(activeTab === "dashboard" || activeTab === "transactions" || activeTab === "analytics") && (
               <MonthYearPicker 

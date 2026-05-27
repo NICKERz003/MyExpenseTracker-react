@@ -75,8 +75,7 @@ const TransactionList = ({ transactions, onDelete, onUpdate, categories }) => {
 
   return (
     <div className="flex flex-col h-full space-y-6">
-      
-      {/* Search & Filter Bar */}
+          {/* Search & Filter Bar */}
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-stretch sm:items-center">
         {/* Search */}
         <div className="relative flex-1">
@@ -91,7 +90,7 @@ const TransactionList = ({ transactions, onDelete, onUpdate, categories }) => {
         </div>
 
         {/* Filter Tabs */}
-        <div className="flex bg-slate-950/40 border border-slate-800/80 rounded-2xl p-1 gap-1">
+        <div className="flex bg-slate-950/40 border border-slate-800/80 rounded-2xl p-1 gap-1 overflow-x-auto scrollbar-hide flex-nowrap shrink-0 max-w-full">
           {[
             { id: "all", label: "ทั้งหมด" },
             { id: "today", label: "วันนี้" },
@@ -101,10 +100,10 @@ const TransactionList = ({ transactions, onDelete, onUpdate, categories }) => {
             <button
               key={tab.id}
               onClick={() => setFilterTab(tab.id)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                 filterTab === tab.id
                   ? "bg-slate-800 text-emerald-400 border border-slate-700/50"
-                  : "text-slate-500 hover:text-slate-300 border border-transparent"
+                  : "text-slate-500 hover:text-slate-350 border border-transparent"
               }`}
             >
               {tab.label}
@@ -164,9 +163,9 @@ const TransactionList = ({ transactions, onDelete, onUpdate, categories }) => {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-4 shrink-0">
+                    <div className="flex flex-col items-end gap-1.5 shrink-0 select-none">
                       <p
-                        className={`font-black text-base ${
+                        className={`font-black text-sm sm:text-base ${
                           item.type === "income" ? "text-emerald-400" : "text-rose-400"
                         }`}
                       >
@@ -178,17 +177,17 @@ const TransactionList = ({ transactions, onDelete, onUpdate, categories }) => {
                       <div className="flex gap-1 md:opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                         <button
                           onClick={() => setEditingItem(item)}
-                          className="p-2 text-slate-500 hover:text-emerald-400 hover:bg-slate-950/80 border border-transparent hover:border-slate-850 rounded-xl transition-all cursor-pointer"
+                          className="p-1.5 sm:p-2 text-slate-500 hover:text-emerald-400 hover:bg-slate-950/80 border border-transparent hover:border-slate-850 rounded-xl transition-all cursor-pointer"
                           title="Edit"
                         >
-                          <Edit2 size={14} />
+                          <Edit2 size={13} />
                         </button>
                         <button
                           onClick={() => onDelete(item.id)}
-                          className="p-2 text-slate-500 hover:text-rose-450 hover:bg-slate-950/80 border border-transparent hover:border-slate-850 rounded-xl transition-all cursor-pointer"
+                          className="p-1.5 sm:p-2 text-slate-500 hover:text-rose-455 hover:bg-slate-950/80 border border-transparent hover:border-slate-850 rounded-xl transition-all cursor-pointer"
                           title="Delete"
                         >
-                          <Trash2 size={14} />
+                          <Trash2 size={13} />
                         </button>
                       </div>
                     </div>
@@ -234,6 +233,18 @@ const EditModal = ({ item, categories, onSave, onClose }) => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = "unset";
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [onClose]);
 
   const handleSave = () => {
     if (!formData.title || !formData.amount || !formData.categoryId) {

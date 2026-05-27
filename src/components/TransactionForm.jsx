@@ -91,7 +91,7 @@ const TransactionForm = ({ isOpen, onClose, onAdd, categories, onAddCategory }) 
       {/* Modal Card */}
       <div 
         ref={modalRef}
-        className="relative w-full max-w-md glass-panel bg-slate-900/90 border border-slate-800/80 p-8 shadow-2xl animate-in zoom-in-95 duration-300"
+        className="relative w-full max-w-md glass-panel bg-slate-900/90 border border-slate-800/80 p-5 sm:p-8 shadow-2xl animate-in zoom-in-95 duration-300"
       >
         {/* Close Button */}
         <button 

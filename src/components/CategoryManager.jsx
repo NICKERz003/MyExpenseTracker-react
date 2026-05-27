@@ -19,6 +19,18 @@ const CategoryManager = ({ categories, onAdd, onEdit, onDelete, onClose }) => {
 
   const currentCats = categories[activeTab];
 
+  React.useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = "unset";
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [onClose]);
+
   const handleStartEdit = (cat) => {
     setEditingId(cat.id);
     setEditForm({ name: cat.name, emoji: cat.emoji });
@@ -60,7 +72,7 @@ const CategoryManager = ({ categories, onAdd, onEdit, onDelete, onClose }) => {
 
       {/* Modal Card */}
       <div 
-        className="relative w-full max-w-lg glass-panel bg-slate-900 border border-slate-800/80 p-8 animate-in zoom-in-95 duration-300 shadow-2xl flex flex-col"
+        className="relative w-full max-w-lg glass-panel bg-slate-900 border border-slate-800/80 p-5 sm:p-8 animate-in zoom-in-95 duration-300 shadow-2xl flex flex-col"
         style={{ maxHeight: '85vh' }}
       >
         

@@ -126,8 +126,8 @@ const ExpenseChart = ({ transactions, categories }) => {
             <PieChart>
               <Pie
                 data={chartData}
-                innerRadius={65}
-                outerRadius={100}
+                innerRadius="55%"
+                outerRadius="80%"
                 paddingAngle={4}
                 dataKey="value"
                 labelLine={false}

@@ -53,7 +53,7 @@ const CustomDatePicker = ({ selectedDate, onChange }) => {
 
     // Empty slots before the first day
     for (let i = 0; i < firstDay; i++) {
-      days.push(<div key={`empty-${i}`} className="h-10 w-10"></div>);
+      days.push(<div key={`empty-${i}`} className="h-8 w-8 sm:h-10 sm:w-10"></div>);
     }
 
     // Days of the month
@@ -62,12 +62,12 @@ const CustomDatePicker = ({ selectedDate, onChange }) => {
         <button
           key={d}
           onClick={() => handleSelectDate(d)}
-          className={`h-10 w-10 rounded-xl text-xs font-black transition-all flex items-center justify-center
+          className={`h-8 w-8 sm:h-10 sm:w-10 rounded-xl text-xs font-black transition-all flex items-center justify-center cursor-pointer border
             ${isSelected(d) 
-              ? 'bg-[#2c8160] text-white shadow-lg shadow-[#2c8160]/30 scale-110' 
+              ? 'bg-emerald-500 text-white border-transparent shadow-lg shadow-emerald-500/25 scale-110' 
               : isToday(d)
-                ? 'bg-[#2c8160]/10 text-[#2c8160]'
-                : 'text-slate-600 hover:bg-slate-50'
+                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                : 'text-slate-400 hover:text-white hover:bg-slate-900 border-transparent hover:border-slate-850'
             }`}
         >
           {d}
@@ -90,57 +90,74 @@ const CustomDatePicker = ({ selectedDate, onChange }) => {
     <div className="relative" ref={containerRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="clay-card-inset !p-3 px-5 flex items-center gap-3 text-xs font-black text-slate-700 hover:bg-slate-50 transition-all"
+        className="bg-slate-950/50 hover:bg-slate-900/60 border border-slate-850 rounded-2xl !p-3 px-5 flex items-center gap-3 text-xs font-bold text-slate-200 transition-all cursor-pointer shadow-sm"
       >
-        <CalendarIcon size={16} className="text-[#2c8160]" />
+        <CalendarIcon size={14} className="text-emerald-400 shrink-0" />
         {formatDateThai(selectedDate)}
       </button>
 
       {isOpen && (
-        <div className="absolute top-full right-0 mt-3 z-[100] clay-card bg-white p-6 shadow-2xl w-[320px] animate-in zoom-in-95 fade-in duration-200">
-          {/* Calendar Header */}
-          <div className="flex justify-between items-center mb-6">
-            <button onClick={() => changeMonth(-1)} className="p-2 clay-card-inset !p-2 text-slate-400 hover:text-[#2c8160]"><ChevronLeft size={16} /></button>
-            <div className="text-center">
-              <p className="text-sm font-black text-slate-800">{months[viewDate.getMonth()]}</p>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{viewDate.getFullYear() + 543}</p>
+        <>
+          {/* Mobile backdrop */}
+          <div 
+            className="fixed inset-0 bg-slate-950/60 backdrop-blur-[2px] z-[90] md:hidden"
+            onClick={() => setIsOpen(false)}
+          />
+          <div className="fixed md:absolute z-[100] left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 md:left-0 md:translate-x-0 md:top-auto md:bottom-full md:translate-y-0 mb-3 glass-panel bg-slate-950/95 border border-slate-800/80 p-5 shadow-2xl w-[285px] sm:w-[320px] text-slate-100 animate-in zoom-in-95 duration-200 flex flex-col">
+            {/* Calendar Header */}
+            <div className="flex justify-between items-center mb-5">
+              <button 
+                onClick={() => changeMonth(-1)} 
+                className="bg-slate-900 hover:bg-slate-850 text-slate-400 hover:text-emerald-400 border border-slate-800/80 rounded-xl p-2 transition-all cursor-pointer"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <div className="text-center">
+                <p className="text-sm font-black text-white">{months[viewDate.getMonth()]}</p>
+                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-0.5">{viewDate.getFullYear() + 543}</p>
+              </div>
+              <button 
+                onClick={() => changeMonth(1)} 
+                className="bg-slate-900 hover:bg-slate-850 text-slate-400 hover:text-emerald-400 border border-slate-800/80 rounded-xl p-2 transition-all cursor-pointer"
+              >
+                <ChevronRight size={16} />
+              </button>
             </div>
-            <button onClick={() => changeMonth(1)} className="p-2 clay-card-inset !p-2 text-slate-400 hover:text-[#2c8160]"><ChevronRight size={16} /></button>
-          </div>
 
-          {/* Days Name */}
-          <div className="grid grid-cols-7 gap-1 mb-2">
-            {daysShort.map(d => (
-              <div key={d} className="h-8 flex items-center justify-center text-[10px] font-black text-slate-300 uppercase">{d}</div>
-            ))}
-          </div>
+            {/* Days Name */}
+            <div className="grid grid-cols-7 gap-1 mb-2">
+              {daysShort.map(d => (
+                <div key={d} className="h-8 flex items-center justify-center text-[10px] font-black text-slate-500 uppercase">{d}</div>
+              ))}
+            </div>
 
-          {/* Days Grid */}
-          <div className="grid grid-cols-7 gap-1">
-            {renderDays()}
-          </div>
+            {/* Days Grid */}
+            <div className="grid grid-cols-7 gap-1">
+              {renderDays()}
+            </div>
 
-          {/* Quick Actions */}
-          <div className="mt-6 pt-4 border-t border-slate-50 flex justify-between">
-            <button 
-              onClick={() => {
-                const today = new Date().toISOString().split('T')[0];
-                onChange(today);
-                setViewDate(new Date());
-                setIsOpen(false);
-              }}
-              className="text-[10px] font-black text-[#2c8160] hover:underline"
-            >
-              วันนี้
-            </button>
-            <button 
-              onClick={() => setIsOpen(false)}
-              className="text-[10px] font-black text-slate-400 hover:text-red-500"
-            >
-              ยกเลิก
-            </button>
+            {/* Quick Actions */}
+            <div className="mt-5 pt-4 border-t border-slate-850 flex justify-between">
+              <button 
+                onClick={() => {
+                  const today = new Date().toISOString().split('T')[0];
+                  onChange(today);
+                  setViewDate(new Date());
+                  setIsOpen(false);
+                }}
+                className="text-[10px] font-black text-emerald-400 hover:underline cursor-pointer"
+              >
+                วันนี้
+              </button>
+              <button 
+                onClick={() => setIsOpen(false)}
+                className="text-[10px] font-black text-slate-500 hover:text-rose-400 cursor-pointer"
+              >
+                ยกเลิก
+              </button>
+            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );
